@@ -10,16 +10,20 @@ request = urllib.request.Request(url, headers={'User-Agent': 'PEAK-helper-build/
 with urllib.request.urlopen(request, timeout=60) as response:
     source = response.read(2_000_000).decode('utf-8')
 classes = {'FunCommands', 'RPCCommands', 'PlayerEffectCommands', 'ServerAdmin',
-           'SpawnCommands', 'ScoutMasterCommands', 'MapCommands', 'EnvironmentCommands'}
-# Record signatures only: method bodies and the dependency itself are not redistributed.
-pattern = re.compile(r'^\s*(?:public|internal)\s+(?:static\s+)?(?:class|(?:static\s+)?[\w<>\[\],.?]+)\s+\w+[^\n]*', re.M)
-lines = [m.group(0).strip() for m in pattern.finditer(source)
-         if any(re.search(r'\b' + re.escape(c) + r'\b', m.group(0)) for c in classes)
-         or re.search(r'\b(?:DropCoconutOnPlayer|CallScoutmaster|StopScoutmaster|SpawnScoutmaster|'
-                      r'TriggerBananaPeel|PassOutAllPlayers|UnPassOutAllPlayers|ForceWin|'
-                      r'SyncGoToBeach|GoToPeak|SpeedPlayer|SwarmWithBees|TickPlayer|'
-                      r'SpawnItemByName|ObjectSpawnJellyfish|ListItems)\s*\(', m.group(0))]
-if not lines:
+           'SpawnCommands', 'ScoutMasterCommands', 'MapCommands', 'EnvironmentCommands', 'Teleport'}
+# Keep API declarations only, not bodies or the dependency itself.
+lines = []
+current = None
+for line in source.splitlines():
+    m = re.match(r'^\s*(?:public|internal)\s+(?:static\s+)?class\s+(\w+)', line)
+    if m:
+        current = m.group(1)
+        if current in classes:
+            lines.append('\n### ' + current)
+        continue
+    if current in classes and re.match(r'^\s*public\s+static\s+.*\(', line):
+        lines.append(line.strip())
+if len(lines) < 10:
     raise RuntimeError('No matching declarations found in analysis')
 out = pathlib.Path('research/advancedconsole-signatures.txt')
 out.parent.mkdir(exist_ok=True)
