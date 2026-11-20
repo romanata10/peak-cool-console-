@@ -1,0 +1,24 @@
+AdvancedConsole 1.1.9 public declarations; Thunderstore analysis.
+public static class EnvironmentCommands
+public static class FunCommands
+public static void DropCoconutOnPlayer(Player target)
+public static void ListItems()
+public static class MapCommands
+public static void GoToPeak()
+public static class PlayerEffectCommands
+public static class RPCCommands
+public static void ForceWin()
+public static void TriggerBananaPeel(Player target)
+public static void PassOutAllPlayers()
+public static void UnPassOutAllPlayers()
+public static void SyncGoToBeach()
+public static class ScoutMasterCommands
+public static void CallScoutmaster(Player target)
+public static void StopScoutmaster()
+public static void SpawnScoutmaster()
+public static class ServerAdmin
+public static void SpeedPlayer(string playerName)
+public static class SpawnCommands
+public static void ListItems()
+public static void SpawnItemByName(string itemNameOrId)
+public static void TickPlayer(Player target)
