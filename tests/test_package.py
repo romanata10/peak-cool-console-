@@ -27,7 +27,7 @@ class PackageTests(unittest.TestCase):
                 self.assertEqual(set(package.namelist()), {
                     'manifest.json', 'README.md', 'icon.png', 'plugins/PeakCoolConsole.dll'})
                 manifest = json.loads(package.read('manifest.json'))
-                self.assertEqual(manifest['version_number'], '0.7.0')
+                self.assertEqual(manifest['version_number'], '0.8.0')
                 self.assertIn('keklick1337-AdvancedConsole-1.1.9', manifest['dependencies'])
                 self.assertEqual(package.read('plugins/PeakCoolConsole.dll'), b'test-only')
 

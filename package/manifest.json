@@ -1,6 +1,6 @@
 {
   "name": "PeakCoolConsoleHelper",
-  "version_number": "0.7.0",
+  "version_number": "0.8.0",
   "website_url": "",
   "description": "Local controls and buttons for selected AdvancedConsole actions.",
   "dependencies": [

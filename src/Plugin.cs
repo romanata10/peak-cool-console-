@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace PeakCoolConsole
 {
-    [BepInPlugin("com.peakcoolconsole.helper", "Peak Cool Console Helper", "0.7.0")]
+    [BepInPlugin("com.peakcoolconsole.helper", "Peak Cool Console Helper", "0.8.0")]
     [BepInDependency("com.keklick1337.peak.advancedconsole", BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -32,7 +32,7 @@ namespace PeakCoolConsole
         private string coconutTarget;
         private float nextCoconut;
         private int coconutScene;
-        private string status = "F1 opens AdvancedConsole; F8 opens this menu.";
+        private string status = "Open or close: F6, F7, F8, F10 or Insert.";
         private bool fly;
         private float flySpeed = 10f;
         private float speed = 1f;
@@ -63,13 +63,14 @@ namespace PeakCoolConsole
 
         private void Awake()
         {
-            Logger.LogInfo("Peak Cool Console Helper 0.7.0 loaded. The menu opens at startup; F8/F10 toggles it.");
-            SetVisible(true);
+            Logger.LogInfo("Peak Cool Console Helper 0.8.0 loaded. Press F6, F7, F8, F10 or Insert to toggle the menu.");
         }
 
         private void Update()
         {
-            if (KeyDown("f8Key", KeyCode.F8) || KeyDown("f10Key", KeyCode.F10)) SetVisible(!visible);
+            if (KeyDown("f6Key", KeyCode.F6) || KeyDown("f7Key", KeyCode.F7) ||
+                KeyDown("f8Key", KeyCode.F8) || KeyDown("f10Key", KeyCode.F10) ||
+                KeyDown("insertKey", KeyCode.Insert)) SetVisible(!visible);
             if (coconutsRemaining > 0 && UnityEngine.SceneManagement.SceneManager.GetActiveScene().handle != coconutScene)
             {
                 coconutsRemaining = 0;
@@ -253,7 +254,7 @@ namespace PeakCoolConsole
                 window.height = Mathf.Min(700f, Screen.height);
                 window.x = Mathf.Clamp(window.x, 0f, Mathf.Max(0f, Screen.width - window.width));
                 window.y = Mathf.Clamp(window.y, 0f, Mathf.Max(0f, Screen.height - window.height));
-                window = GUILayout.Window(908712, window, DrawWindow, "Peak Cool Console Helper | F8 / F10");
+                window = GUILayout.Window(908712, window, DrawWindow, "Peak Cool Console Helper | F6 / F7 / F8 / F10 / Insert");
             }
         }
 
