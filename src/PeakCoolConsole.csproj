@@ -6,12 +6,19 @@
     <LangVersion>latest</LangVersion>
     <BepInExCore Condition="'$(BepInExCore)' == ''">$(PeakDir)/BepInEx/core</BepInExCore>
   </PropertyGroup>
-  <Target Name="CheckReferences" BeforeTargets="ResolveReferences">
+  <PropertyGroup Condition="'$(PublicReferences)' == 'true'">
+    <RestoreAdditionalProjectSources>https://nuget.bepinex.dev/v3/index.json;https://nuget.windows10ce.com/nuget/v3/index.json</RestoreAdditionalProjectSources>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(PublicReferences)' == 'true'">
+    <PackageReference Include="BepInEx.Core" Version="5.4.21" PrivateAssets="all" />
+    <PackageReference Include="UnityEngine.Modules" Version="6000.0.36" PrivateAssets="all" />
+  </ItemGroup>
+  <Target Name="CheckReferences" BeforeTargets="ResolveReferences" Condition="'$(PublicReferences)' != 'true'">
     <Error Condition="'$(PeakDir)' == ''" Text="Set PeakDir to your PEAK installation directory." />
     <Error Condition="!Exists('$(BepInExCore)/BepInEx.dll')" Text="BepInEx.dll not found. Set BepInExCore to your profile BepInEx/core directory." />
     <Error Condition="!Exists('$(PeakDir)/PEAK_Data/Managed/UnityEngine.CoreModule.dll')" Text="Unity libraries not found in PEAK_Data/Managed. Check PeakDir and your game version." />
   </Target>
-  <ItemGroup>
+  <ItemGroup Condition="'$(PublicReferences)' != 'true'">
     <Reference Include="BepInEx"><HintPath>$(BepInExCore)/BepInEx.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(PeakDir)/PEAK_Data/Managed/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(PeakDir)/PEAK_Data/Managed/UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>

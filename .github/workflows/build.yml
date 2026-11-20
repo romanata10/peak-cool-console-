@@ -1,0 +1,30 @@
+name: Build experimental mod
+on:
+  push:
+    branches:
+      - 'arena/1f062e66-peak-cool-console'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Test package builder
+        run: python3 -m unittest discover -s tests -v
+      - name: Build using public reference assemblies
+        run: dotnet build src/PeakCoolConsole.csproj -c Release -p:PublicReferences=true
+      - name: Make Thunderstore zip
+        run: python3 package/build_zip.py src/bin/Release/netstandard2.1/PeakCoolConsole.dll PeakCoolConsoleHelper-0.3.0.zip
+      - name: Upload experimental build
+        uses: actions/upload-artifact@v4
+        with:
+          name: PeakCoolConsoleHelper-experimental
+          path: |
+            PeakCoolConsoleHelper-0.3.0.zip
+            src/bin/Release/netstandard2.1/PeakCoolConsole.dll
+          if-no-files-found: error
