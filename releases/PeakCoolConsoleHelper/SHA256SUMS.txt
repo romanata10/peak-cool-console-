@@ -1,0 +1,2 @@
+a7da45230433bf86a45abcf6eb49d2aac59a80100ec7aa19a8c3a4467f4e2d79  PeakCoolConsoleHelper-0.5.0.zip
+c9b244603f21e377e2a85f12f809ffca787181b87f0fa7da27c98ce3d61e8357  PeakCoolConsole.dll
