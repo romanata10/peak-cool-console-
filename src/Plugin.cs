@@ -20,6 +20,7 @@ namespace PeakCoolConsole
         private float previousDensity;
         private float density = 0.03f;
         private Vector2 scroll;
+        private Vector2 windowScroll;
         private Rect window = new Rect(30, 30, 720, 700);
         private string target = "";
         private string item = "";
@@ -51,7 +52,10 @@ namespace PeakCoolConsole
             "Everyone to beach (host): RPCCommands.SyncGoToBeach",
             "Speed player (host): ServerAdmin.SpeedPlayer playerName",
             "Slow player (host): ServerAdmin.SlowPlayer playerName",
-            "Swarm: PlayerEffectCommands.SwarmWithBees playerName"
+            "Swarm: PlayerEffectCommands.SwarmWithBees playerName",
+            "Scoutmaster: ScoutMasterCommands.CallScoutmaster playerName",
+            "Stop Scoutmaster: ScoutMasterCommands.StopScoutmaster",
+            "Spawn Scoutmaster (host): ScoutMasterCommands.SpawnScoutmaster"
         };
 
         private void Update()
@@ -177,11 +181,19 @@ namespace PeakCoolConsole
 
         private void OnGUI()
         {
-            if (visible) window = GUILayout.Window(908712, window, DrawWindow, "Peak Cool Console Helper | F8");
+            if (visible)
+            {
+                window.width = Mathf.Min(720f, Screen.width);
+                window.height = Mathf.Min(700f, Screen.height);
+                window.x = Mathf.Clamp(window.x, 0f, Mathf.Max(0f, Screen.width - window.width));
+                window.y = Mathf.Clamp(window.y, 0f, Mathf.Max(0f, Screen.height - window.height));
+                window = GUILayout.Window(908712, window, DrawWindow, "Peak Cool Console Helper | F8");
+            }
         }
 
         private void DrawWindow(int id)
         {
+            windowScroll = GUILayout.BeginScrollView(windowScroll);
             GUILayout.Label("LOCAL ONLY: pause and fog do not control other clients.");
             GUILayout.BeginHorizontal();
             if (GUILayout.Button(paused ? "Resume local game" : "Pause local game")) TogglePause();
@@ -218,6 +230,11 @@ namespace PeakCoolConsole
             if (GUILayout.Button("Banana slip")) RunForTarget("RPCCommands", "TriggerBananaPeel");
             if (GUILayout.Button("Bee swarm")) RunForTarget("PlayerEffectCommands", "SwarmWithBees");
             if (GUILayout.Button("Tick")) RunForTarget("SpawnCommands", "TickPlayer");
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Scoutmaster -> player")) RunForTarget("ScoutMasterCommands", "CallScoutmaster");
+            if (GUILayout.Button("Stop Scoutmaster")) RunCommand("ScoutMasterCommands", "StopScoutmaster");
+            if (GUILayout.Button("Spawn Scoutmaster (host)")) RunCommand("ScoutMasterCommands", "SpawnScoutmaster");
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("Sleep all")) RunCommand("RPCCommands", "PassOutAllPlayers");
@@ -260,7 +277,8 @@ namespace PeakCoolConsole
             GUILayout.EndScrollView();
             GUILayout.Label(status);
             if (GUILayout.Button("Close")) visible = false;
-            GUI.DragWindow();
+            GUILayout.EndScrollView();
+            GUI.DragWindow(new Rect(0, 0, window.width, 20));
         }
 
         private void StartCoconuts()
