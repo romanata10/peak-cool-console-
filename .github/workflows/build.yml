@@ -36,9 +36,10 @@ jobs:
           mkdir -p releases/PeakCoolConsoleHelper
           cp src/bin/Release/netstandard2.1/PeakCoolConsole.dll releases/PeakCoolConsoleHelper/
           cp PeakCoolConsoleHelper-0.5.0.zip releases/PeakCoolConsoleHelper/
+          (cd releases/PeakCoolConsoleHelper && sha256sum PeakCoolConsoleHelper-0.5.0.zip PeakCoolConsole.dll > SHA256SUMS.txt)
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -f releases/PeakCoolConsoleHelper/PeakCoolConsole.dll releases/PeakCoolConsoleHelper/PeakCoolConsoleHelper-0.5.0.zip research/advancedconsole-signatures.txt
+          git add -f releases/PeakCoolConsoleHelper/PeakCoolConsole.dll releases/PeakCoolConsoleHelper/PeakCoolConsoleHelper-0.5.0.zip releases/PeakCoolConsoleHelper/SHA256SUMS.txt research/advancedconsole-signatures.txt
           if ! git diff --cached --quiet; then
             git commit -m 'Add experimental compiled mod package'
             git push origin HEAD:refs/heads/arena/1f062e66-peak-cool-console
