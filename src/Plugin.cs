@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace PeakCoolConsole
 {
-    [BepInPlugin("com.peakcoolconsole.helper", "Peak Cool Console Helper", "0.3.0")]
+    [BepInPlugin("com.peakcoolconsole.helper", "Peak Cool Console Helper", "0.4.0")]
     [BepInDependency("com.keklick1337.peak.advancedconsole", BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -256,6 +256,7 @@ namespace PeakCoolConsole
             }
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
+            if (GUILayout.Button("List players (see F1)")) RunCommand("InfoCommands", "ListPlayers");
             if (GUILayout.Button("List items (see F1)")) RunCommand("SpawnCommands", "ListItems");
             if (GUILayout.Button("Spawn jellyfish (near self)")) RunCommand("SpawnCommands", "ObjectSpawnJellyfish");
             GUILayout.EndHorizontal();
@@ -317,7 +318,15 @@ namespace PeakCoolConsole
                 var parameters = methods[0].GetParameters();
                 var values = new object[parameters.Length];
                 for (int i = 0; i < parameters.Length; i++)
-                    values[i] = i < args.Length ? args[i] : parameters[i].DefaultValue;
+                {
+                    if (i >= args.Length) values[i] = parameters[i].DefaultValue;
+                    else if (parameters[i].ParameterType.FullName == "Photon.Realtime.Player" && args[i] is string)
+                    {
+                        values[i] = FindPhotonPlayer((string)args[i], parameters[i].ParameterType);
+                        if (values[i] == null) return false;
+                    }
+                    else values[i] = args[i];
+                }
                 object result = methods[0].Invoke(null, values);
                 if (result is bool && !(bool)result) { status = "Command reported failure: " + methodName; return false; }
                 status = "Called " + typeName + "." + methodName + "; check game/console for result.";
@@ -339,9 +348,32 @@ namespace PeakCoolConsole
             for (int i = 0; i < parameters.Length; i++)
             {
                 if (i >= args.Length) { if (!parameters[i].IsOptional) return false; }
-                else if (args[i] == null || !parameters[i].ParameterType.IsInstanceOfType(args[i])) return false;
+                else if (args[i] == null || (!parameters[i].ParameterType.IsInstanceOfType(args[i]) &&
+                    !(args[i] is string && parameters[i].ParameterType.FullName == "Photon.Realtime.Player"))) return false;
             }
             return true;
+        }
+
+        // AdvancedConsole 1.1.9 uses Photon Player arguments for several commands.
+        // Do not guess on duplicate nicknames: targeting the wrong player is worse than failing.
+        private object FindPhotonPlayer(string name, Type expectedType)
+        {
+            var photonAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a =>
+                a.GetType("Photon.Pun.PhotonNetwork") != null);
+            var network = photonAssembly == null ? null : photonAssembly.GetType("Photon.Pun.PhotonNetwork");
+            var playersProperty = network == null ? null : network.GetProperty("PlayerList", BindingFlags.Public | BindingFlags.Static);
+            var players = playersProperty == null ? null : playersProperty.GetValue(null, null) as IEnumerable;
+            if (players == null) { status = "Photon player list unavailable. Join a lobby first."; return null; }
+            object match = null;
+            foreach (var player in players)
+            {
+                if (player == null || !expectedType.IsInstanceOfType(player)) continue;
+                if (!string.Equals(ReadMember(player, "NickName") as string, name, StringComparison.Ordinal)) continue;
+                if (match != null) { status = "Duplicate player name; cannot choose safely."; return null; }
+                match = player;
+            }
+            if (match == null) status = "Player not found. Enter the exact lobby nickname.";
+            return match;
         }
 
         private void TogglePause()
