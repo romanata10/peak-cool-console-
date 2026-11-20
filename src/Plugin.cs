@@ -8,11 +8,14 @@ using UnityEngine;
 
 namespace PeakCoolConsole
 {
-    [BepInPlugin("com.peakcoolconsole.helper", "Peak Cool Console Helper", "0.5.0")]
+    [BepInPlugin("com.peakcoolconsole.helper", "Peak Cool Console Helper", "0.6.0")]
     [BepInDependency("com.keklick1337.peak.advancedconsole", BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
         private bool visible;
+        private bool savedCursorVisible;
+        private CursorLockMode savedCursorLock;
+        private bool legacyInputUnavailable;
         private bool paused;
         private float previousTimeScale = 1f;
         private bool fogModified;
@@ -58,9 +61,14 @@ namespace PeakCoolConsole
             "Spawn Scoutmaster (host): ScoutMasterCommands.SpawnScoutmaster"
         };
 
+        private void Awake()
+        {
+            Logger.LogInfo("Peak Cool Console Helper 0.6.0 loaded. Press F8 or F10 to open the menu.");
+        }
+
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.F8)) visible = !visible;
+            if (KeyDown("f8Key", KeyCode.F8) || KeyDown("f10Key", KeyCode.F10)) SetVisible(!visible);
             if (coconutsRemaining > 0 && UnityEngine.SceneManagement.SceneManager.GetActiveScene().handle != coconutScene)
             {
                 coconutsRemaining = 0;
@@ -79,6 +87,63 @@ namespace PeakCoolConsole
             }
         }
 
+        private void LateUpdate()
+        {
+            if (visible) { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
+        }
+
+        private void SetVisible(bool value)
+        {
+            if (visible == value) return;
+            if (value)
+            {
+                savedCursorLock = Cursor.lockState;
+                savedCursorVisible = Cursor.visible;
+            }
+            else
+            {
+                Cursor.lockState = savedCursorLock;
+                Cursor.visible = savedCursorVisible;
+            }
+            visible = value;
+            Logger.LogInfo(value ? "Menu opened." : "Menu closed.");
+        }
+
+        // PEAK versions may use Unity's new input system instead of the legacy API.
+        // Reflection keeps the plugin loadable even when that optional assembly is absent.
+        private static object CurrentKeyboard()
+        {
+            var assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "Unity.InputSystem");
+            var type = assembly == null ? null : assembly.GetType("UnityEngine.InputSystem.Keyboard");
+            var current = type == null ? null : type.GetProperty("current", BindingFlags.Public | BindingFlags.Static);
+            return current == null ? null : current.GetValue(null, null);
+        }
+
+        private bool KeyState(string keyName, KeyCode fallback, bool pressedThisFrame)
+        {
+            try
+            {
+                var keyboard = CurrentKeyboard();
+                if (keyboard != null)
+                {
+                    var key = ReadMember(keyboard, keyName);
+                    var value = ReadMember(key, pressedThisFrame ? "wasPressedThisFrame" : "isPressed");
+                    if (value is bool) return (bool)value;
+                }
+                if (legacyInputUnavailable) return false;
+                return pressedThisFrame ? Input.GetKeyDown(fallback) : Input.GetKey(fallback);
+            }
+            catch (Exception ex)
+            {
+                if (!legacyInputUnavailable) Logger.LogWarning("Keyboard input unavailable: " + ex.Message);
+                legacyInputUnavailable = true;
+                return false;
+            }
+        }
+
+        private bool KeyDown(string keyName, KeyCode fallback) { return KeyState(keyName, fallback, true); }
+        private bool KeyHeld(string keyName, KeyCode fallback) { return KeyState(keyName, fallback, false); }
+
         private void FixedUpdate()
         {
             if (!fly) return;
@@ -95,12 +160,12 @@ namespace PeakCoolConsole
                 var camera = Camera.main;
                 if (!visible && camera != null)
                 {
-                    if (Input.GetKey(KeyCode.W)) direction += camera.transform.forward;
-                    if (Input.GetKey(KeyCode.S)) direction -= camera.transform.forward;
-                    if (Input.GetKey(KeyCode.D)) direction += camera.transform.right;
-                    if (Input.GetKey(KeyCode.A)) direction -= camera.transform.right;
-                    if (Input.GetKey(KeyCode.Space)) direction += Vector3.up;
-                    if (Input.GetKey(KeyCode.LeftControl)) direction -= Vector3.up;
+                    if (KeyHeld("wKey", KeyCode.W)) direction += camera.transform.forward;
+                    if (KeyHeld("sKey", KeyCode.S)) direction -= camera.transform.forward;
+                    if (KeyHeld("dKey", KeyCode.D)) direction += camera.transform.right;
+                    if (KeyHeld("aKey", KeyCode.A)) direction -= camera.transform.right;
+                    if (KeyHeld("spaceKey", KeyCode.Space)) direction += Vector3.up;
+                    if (KeyHeld("leftCtrlKey", KeyCode.LeftControl)) direction -= Vector3.up;
                 }
                 direction = Vector3.ClampMagnitude(direction, 1f) * flySpeed;
                 int found = 0;
@@ -187,7 +252,7 @@ namespace PeakCoolConsole
                 window.height = Mathf.Min(700f, Screen.height);
                 window.x = Mathf.Clamp(window.x, 0f, Mathf.Max(0f, Screen.width - window.width));
                 window.y = Mathf.Clamp(window.y, 0f, Mathf.Max(0f, Screen.height - window.height));
-                window = GUILayout.Window(908712, window, DrawWindow, "Peak Cool Console Helper | F8");
+                window = GUILayout.Window(908712, window, DrawWindow, "Peak Cool Console Helper | F8 / F10");
             }
         }
 
@@ -287,7 +352,7 @@ namespace PeakCoolConsole
             }
             GUILayout.EndScrollView();
             GUILayout.Label(status);
-            if (GUILayout.Button("Close")) visible = false;
+            if (GUILayout.Button("Close")) SetVisible(false);
             GUILayout.EndScrollView();
             GUI.DragWindow(new Rect(0, 0, window.width, 20));
         }
@@ -431,6 +496,7 @@ namespace PeakCoolConsole
         private void OnDestroy()
         {
             coconutsRemaining = 0;
+            SetVisible(false);
             StopFlight();
             RestoreSpeed();
             RestorePause();

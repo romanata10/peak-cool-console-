@@ -7,7 +7,7 @@
 Проверить хеш уже сохранённого файла в PowerShell:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 'C:\path\to\PeakCoolConsoleHelper-0.5.0.zip'
+Get-FileHash -Algorithm SHA256 'C:\path\to\PeakCoolConsoleHelper-0.6.0.zip'
 ```
 
 Сравните `Hash` с соответствующей строкой `SHA256SUMS.txt` на GitHub. Совпадение показывает только, что файл совпадает с указанной сборкой, **а не что он безопасен**. При несовпадении не устанавливайте файл. Оба файла получены из одного репозитория, поэтому хеш не защищает от компрометации самого репозитория. Внешние зависимости `BepInExPack PEAK` и `AdvancedConsole` устанавливаются отдельно и не проверены этим проектом.

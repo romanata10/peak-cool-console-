@@ -21,13 +21,13 @@ jobs:
       - name: Build using public reference assemblies
         run: dotnet build src/PeakCoolConsole.csproj -c Release -p:PublicReferences=true
       - name: Make Thunderstore zip
-        run: python3 package/build_zip.py src/bin/Release/netstandard2.1/PeakCoolConsole.dll PeakCoolConsoleHelper-0.5.0.zip
+        run: python3 package/build_zip.py src/bin/Release/netstandard2.1/PeakCoolConsole.dll PeakCoolConsoleHelper-0.6.0.zip
       - name: Upload experimental build
         uses: actions/upload-artifact@v4
         with:
           name: PeakCoolConsoleHelper-experimental
           path: |
-            PeakCoolConsoleHelper-0.5.0.zip
+            PeakCoolConsoleHelper-0.6.0.zip
             src/bin/Release/netstandard2.1/PeakCoolConsole.dll
           if-no-files-found: error
       - name: Put build in branch folder
@@ -35,11 +35,11 @@ jobs:
         run: |
           mkdir -p releases/PeakCoolConsoleHelper
           cp src/bin/Release/netstandard2.1/PeakCoolConsole.dll releases/PeakCoolConsoleHelper/
-          cp PeakCoolConsoleHelper-0.5.0.zip releases/PeakCoolConsoleHelper/
-          (cd releases/PeakCoolConsoleHelper && sha256sum PeakCoolConsoleHelper-0.5.0.zip PeakCoolConsole.dll > SHA256SUMS.txt)
+          cp PeakCoolConsoleHelper-0.6.0.zip releases/PeakCoolConsoleHelper/
+          (cd releases/PeakCoolConsoleHelper && sha256sum PeakCoolConsoleHelper-0.6.0.zip PeakCoolConsole.dll > SHA256SUMS.txt)
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -f releases/PeakCoolConsoleHelper/PeakCoolConsole.dll releases/PeakCoolConsoleHelper/PeakCoolConsoleHelper-0.5.0.zip releases/PeakCoolConsoleHelper/SHA256SUMS.txt research/advancedconsole-signatures.txt
+          git add -f releases/PeakCoolConsoleHelper/PeakCoolConsole.dll releases/PeakCoolConsoleHelper/PeakCoolConsoleHelper-0.6.0.zip releases/PeakCoolConsoleHelper/SHA256SUMS.txt research/advancedconsole-signatures.txt
           if ! git diff --cached --quiet; then
             git commit -m 'Add experimental compiled mod package'
             git push origin HEAD:refs/heads/arena/1f062e66-peak-cool-console
