@@ -20,7 +20,7 @@
 
 ## Сборка и пакет Thunderstore
 
-Нужны .NET SDK, Python 3 и установленная **Mono**-версия PEAK с BepInEx 5.4.2403. Проект ссылается на локальные библиотеки игры и BepInEx, которые не входят в репозиторий. Проверьте, что существуют `PEAK_Data/Managed/UnityEngine.CoreModule.dll` и `BepInEx/core/BepInEx.dll` в каталоге игры; имя каталога данных в другой версии игры может отличаться.
+Нужны .NET SDK, Python 3 и установленная **Mono**-версия PEAK с BepInEx 5.4.2403. Проект ссылается на локальные библиотеки игры и BepInEx, которые не входят в репозиторий. Проверьте `PEAK_Data/Managed/UnityEngine.CoreModule.dll` в каталоге игры. Если BepInEx установлен менеджером, `BepInEx.dll` находится в папке `BepInEx/core` профиля, а не в папке игры. Имя каталога данных в другой версии игры может отличаться.
 
 На Linux/macOS или в Git Bash:
 
@@ -31,9 +31,10 @@
 На Windows в PowerShell:
 
 ```powershell
-dotnet build src/PeakCoolConsole.csproj -c Release -p:PeakDir='C:\path\to\PEAK'
-python package/build_zip.py src/bin/Release/netstandard2.1/PeakCoolConsole.dll PeakCoolConsoleHelper-0.3.0.zip
+./build-package.ps1 -PeakDir 'C:\path\to\PEAK' -BepInExCore 'C:\path\to\profile\BepInEx\core'
 ```
+
+Вместо примеров путей укажите реальные пути к игре и папке профиля. Если BepInEx установлен прямо в папке игры, `-BepInExCore` можно не указывать. Для Linux можно передать путь профиля напрямую через `dotnet build -p:BepInExCore=/path/to/profile/BepInEx/core`.
 
 Архив содержит `manifest.json`, `README.md`, `icon.png` и DLL в `plugins/`; его можно загрузить как пакет Thunderstore после проверки в игре. Для ручной установки поместите DLL в `BepInEx/plugins/` и установите AdvancedConsole с её зависимостями. Файл DLL и готовый архив не включены: их нужно собрать из исходников. Перед публикацией проверьте совместимость с текущими версиями PEAK и зависимостей, содержимое архива и поведение в приватной игре.
 

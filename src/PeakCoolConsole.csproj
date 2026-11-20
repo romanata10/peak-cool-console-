@@ -4,12 +4,15 @@
     <AssemblyName>PeakCoolConsole</AssemblyName>
     <RootNamespace>PeakCoolConsole</RootNamespace>
     <LangVersion>latest</LangVersion>
+    <BepInExCore Condition="'$(BepInExCore)' == ''">$(PeakDir)/BepInEx/core</BepInExCore>
   </PropertyGroup>
-  <Target Name="CheckReferences" BeforeTargets="ResolveReferences" Condition="'$(PeakDir)' == ''">
-    <Error Text="Set PeakDir to your PEAK installation directory: dotnet build -p:PeakDir=/path/to/PEAK" />
+  <Target Name="CheckReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(PeakDir)' == ''" Text="Set PeakDir to your PEAK installation directory." />
+    <Error Condition="!Exists('$(BepInExCore)/BepInEx.dll')" Text="BepInEx.dll not found. Set BepInExCore to your profile BepInEx/core directory." />
+    <Error Condition="!Exists('$(PeakDir)/PEAK_Data/Managed/UnityEngine.CoreModule.dll')" Text="Unity libraries not found in PEAK_Data/Managed. Check PeakDir and your game version." />
   </Target>
   <ItemGroup>
-    <Reference Include="BepInEx"><HintPath>$(PeakDir)/BepInEx/core/BepInEx.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="BepInEx"><HintPath>$(BepInExCore)/BepInEx.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(PeakDir)/PEAK_Data/Managed/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(PeakDir)/PEAK_Data/Managed/UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(PeakDir)/PEAK_Data/Managed/UnityEngine.IMGUIModule.dll</HintPath><Private>false</Private></Reference>
