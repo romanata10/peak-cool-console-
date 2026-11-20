@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace PeakCoolConsole
 {
-    [BepInPlugin("com.peakcoolconsole.helper", "Peak Cool Console Helper", "0.4.0")]
+    [BepInPlugin("com.peakcoolconsole.helper", "Peak Cool Console Helper", "0.5.0")]
     [BepInDependency("com.keklick1337.peak.advancedconsole", BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -52,7 +52,7 @@ namespace PeakCoolConsole
             "Everyone to beach (host): RPCCommands.SyncGoToBeach",
             "Speed player (host): ServerAdmin.SpeedPlayer playerName",
             "Slow player (host): ServerAdmin.SlowPlayer playerName",
-            "Swarm: PlayerEffectCommands.SwarmWithBees playerName",
+            "Spawn bees near self: SpawnCommands.SpawnBeeSwarm",
             "Scoutmaster: ScoutMasterCommands.CallScoutmaster playerName",
             "Stop Scoutmaster: ScoutMasterCommands.StopScoutmaster",
             "Spawn Scoutmaster (host): ScoutMasterCommands.SpawnScoutmaster"
@@ -228,7 +228,7 @@ namespace PeakCoolConsole
             if (GUILayout.Button("Drop coconuts")) StartCoconuts();
             if (GUILayout.Button("Stop coconuts")) { coconutsRemaining = 0; status = "Coconut queue stopped."; }
             if (GUILayout.Button("Banana slip")) RunForTarget("RPCCommands", "TriggerBananaPeel");
-            if (GUILayout.Button("Bee swarm")) RunForTarget("PlayerEffectCommands", "SwarmWithBees");
+            if (GUILayout.Button("Bees near self")) RunCommand("SpawnCommands", "SpawnBeeSwarm");
             if (GUILayout.Button("Tick")) RunForTarget("SpawnCommands", "TickPlayer");
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
@@ -247,6 +247,16 @@ namespace PeakCoolConsole
             if (GUILayout.Button("Speed player (host)")) RunForTarget("ServerAdmin", "SpeedPlayer");
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Teleport to player")) RunForTarget("Teleport", "To");
+            if (GUILayout.Button("Bring player to me")) RunForTarget("Teleport", "PlayerToMe");
+            if (GUILayout.Button("Bring all to me")) RunCommand("Teleport", "AllToMe");
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Eruption on player")) RunForTarget("RPCCommands", "SpawnEruption");
+            if (GUILayout.Button("Sleep player")) RunForTarget("RPCCommands", "PassOutPlayer");
+            if (GUILayout.Button("Wake player")) RunForTarget("RPCCommands", "UnPassOutPlayer");
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
             GUILayout.Label("Item name or ID", GUILayout.Width(110));
             item = GUILayout.TextField(item, 100);
             if (GUILayout.Button("Spawn item"))
@@ -258,7 +268,7 @@ namespace PeakCoolConsole
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("List players (see F1)")) RunCommand("InfoCommands", "ListPlayers");
             if (GUILayout.Button("List items (see F1)")) RunCommand("SpawnCommands", "ListItems");
-            if (GUILayout.Button("Spawn jellyfish (near self)")) RunCommand("SpawnCommands", "ObjectSpawnJellyfish");
+            if (GUILayout.Button("Random item")) RunCommand("SpawnCommands", "SpawnRandomItem");
             GUILayout.EndHorizontal();
             GUILayout.Label("Actions depend on AdvancedConsole, game version and network permissions.");
             GUILayout.Label("AdvancedConsole examples (copy, replace arguments, run in F1):");
