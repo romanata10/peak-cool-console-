@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace PeakCoolConsole
 {
-    [BepInPlugin("com.peakcoolconsole.helper", "Peak Cool Console Helper", "0.6.0")]
+    [BepInPlugin("com.peakcoolconsole.helper", "Peak Cool Console Helper", "0.7.0")]
     [BepInDependency("com.keklick1337.peak.advancedconsole", BepInDependency.DependencyFlags.SoftDependency)]
     public sealed class Plugin : BaseUnityPlugin
     {
@@ -63,7 +63,8 @@ namespace PeakCoolConsole
 
         private void Awake()
         {
-            Logger.LogInfo("Peak Cool Console Helper 0.6.0 loaded. Press F8 or F10 to open the menu.");
+            Logger.LogInfo("Peak Cool Console Helper 0.7.0 loaded. The menu opens at startup; F8/F10 toggles it.");
+            SetVisible(true);
         }
 
         private void Update()
@@ -282,7 +283,7 @@ namespace PeakCoolConsole
             if (GUILayout.Button("Apply speed")) SetSpeed();
             if (GUILayout.Button("Restore speed")) { RestoreSpeed(); status = "Previous speed restored."; }
             GUILayout.EndHorizontal();
-            GUILayout.Label("AdvancedConsole actions: enter the exact player name.");
+            GUILayout.Label("Network actions: enter the exact lobby nickname. Remote effects are not guaranteed.");
             GUILayout.BeginHorizontal();
             GUILayout.Label("Player", GUILayout.Width(60));
             target = GUILayout.TextField(target, 100);
@@ -302,8 +303,8 @@ namespace PeakCoolConsole
             if (GUILayout.Button("Spawn Scoutmaster (host)")) RunCommand("ScoutMasterCommands", "SpawnScoutmaster");
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Sleep all")) RunCommand("RPCCommands", "PassOutAllPlayers");
-            if (GUILayout.Button("Wake all")) RunCommand("RPCCommands", "UnPassOutAllPlayers");
+            if (GUILayout.Button("Sleep all (game RPC)")) SendPassOut(true, true);
+            if (GUILayout.Button("Wake all (game RPC)")) SendPassOut(false, true);
             if (GUILayout.Button("Go to peak")) RunCommand("MapCommands", "GoToPeak");
             if (GUILayout.Button("Win")) RunCommand("RPCCommands", "ForceWin");
             GUILayout.EndHorizontal();
@@ -318,8 +319,8 @@ namespace PeakCoolConsole
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("Eruption on player")) RunForTarget("RPCCommands", "SpawnEruption");
-            if (GUILayout.Button("Sleep player")) RunForTarget("RPCCommands", "PassOutPlayer");
-            if (GUILayout.Button("Wake player")) RunForTarget("RPCCommands", "UnPassOutPlayer");
+            if (GUILayout.Button("Sleep player (game RPC)")) SendPassOut(true, false);
+            if (GUILayout.Button("Wake player (game RPC)")) SendPassOut(false, false);
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             GUILayout.Label("Item name or ID", GUILayout.Width(110));
@@ -331,7 +332,7 @@ namespace PeakCoolConsole
             }
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("List players (see F1)")) RunCommand("InfoCommands", "ListPlayers");
+            if (GUILayout.Button("List players (log)")) ListPlayers();
             if (GUILayout.Button("List items (see F1)")) RunCommand("SpawnCommands", "ListItems");
             if (GUILayout.Button("Random item")) RunCommand("SpawnCommands", "SpawnRandomItem");
             GUILayout.EndHorizontal();
@@ -355,6 +356,94 @@ namespace PeakCoolConsole
             if (GUILayout.Button("Close")) SetVisible(false);
             GUILayout.EndScrollView();
             GUI.DragWindow(new Rect(0, 0, window.width, 20));
+        }
+
+        private static Type FindType(string fullName)
+        {
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var type = assembly.GetType(fullName, false);
+                if (type != null) return type;
+            }
+            return null;
+        }
+
+        private static object ReadStatic(Type type, string name)
+        {
+            if (type == null) return null;
+            const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+            var field = type.GetField(name, flags);
+            if (field != null) return field.GetValue(null);
+            var prop = type.GetProperty(name, flags);
+            return prop == null ? null : prop.GetValue(null, null);
+        }
+
+        private void ListPlayers()
+        {
+            try
+            {
+                var players = ReadStatic(FindType("Photon.Pun.PhotonNetwork"), "PlayerList") as IEnumerable;
+                if (players == null) { status = "Player list unavailable. Join a lobby."; return; }
+                var names = new List<string>();
+                foreach (var player in players)
+                {
+                    var name = ReadMember(player, "NickName") as string;
+                    if (name != null) names.Add(name);
+                }
+                status = names.Count == 0 ? "No players in room." : "Players: " + string.Join(", ", names.ToArray());
+                Logger.LogInfo(status);
+            }
+            catch (Exception ex) { status = "Player list failed: " + ex.Message; Logger.LogWarning(ex); }
+        }
+
+        // PEAK exposes these RPCs itself. Sending a request does not confirm that
+        // remote clients accepted it; no receiver code is installed on their machines.
+        private void SendPassOut(bool sleep, bool all)
+        {
+            try
+            {
+                var network = FindType("Photon.Pun.PhotonNetwork");
+                var inRoom = ReadStatic(network, "InRoom");
+                if (!(inRoom is bool) || !(bool)inRoom) { status = "Join a room before sending game RPCs."; return; }
+                if (!all && string.IsNullOrWhiteSpace(target)) { status = "Enter the exact lobby nickname."; return; }
+                var characters = ReadStatic(FindType("Character"), "AllCharacters") as IEnumerable;
+                var rpcTargetType = FindType("Photon.Pun.RpcTarget");
+                if (characters == null || rpcTargetType == null)
+                { status = "Game character or Photon RPC API unavailable for this version."; return; }
+                var matches = new List<object>();
+                foreach (var character in characters)
+                {
+                    if (character == null) continue;
+                    var view = ReadMember(character, "photonView");
+                    if (view == null) continue;
+                    if (!all)
+                    {
+                        var owner = ReadMember(view, "Owner");
+                        if (!string.Equals(ReadMember(owner, "NickName") as string, target.Trim(), StringComparison.Ordinal)) continue;
+                    }
+                    matches.Add(view);
+                }
+                if (matches.Count == 0) { status = "No matching character found in game."; return; }
+                if (!all && matches.Count != 1) { status = "Ambiguous nickname; no RPC sent."; return; }
+                var method = matches[0].GetType().GetMethod("RPC", new[] { typeof(string), rpcTargetType, typeof(object[]) });
+                if (method == null) { status = "Photon RPC signature unavailable for this version."; return; }
+                object rpcAll = Enum.Parse(rpcTargetType, "All");
+                string rpcName = sleep ? "RPCA_PassOut" : "RPCA_UnPassOut";
+                int sent = 0;
+                foreach (var view in matches)
+                {
+                    method.Invoke(view, new object[] { rpcName, rpcAll, new object[0] });
+                    sent++;
+                }
+                status = "Sent " + rpcName + " for " + sent + " character(s); remote effect not confirmed.";
+                Logger.LogInfo(status);
+            }
+            catch (Exception ex)
+            {
+                var cause = ex is TargetInvocationException && ex.InnerException != null ? ex.InnerException : ex;
+                status = "Game RPC failed: " + cause.Message;
+                Logger.LogWarning(cause);
+            }
         }
 
         private void StartCoconuts()
