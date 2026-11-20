@@ -1,0 +1,10 @@
+{
+  "name": "PeakCoolConsoleHelper",
+  "version_number": "0.3.0",
+  "website_url": "",
+  "description": "Local controls and buttons for selected AdvancedConsole actions.",
+  "dependencies": [
+    "BepInEx-BepInExPack_PEAK-5.4.2403",
+    "keklick1337-AdvancedConsole-1.1.9"
+  ]
+}
